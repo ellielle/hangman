@@ -36,9 +36,14 @@ class Hangman
   def check_for_win;  end # TODO
 
   def print_menu
-    puts "\n\nEnter a letter to make a guess, or type exit to save your progress and exit the game: "
+    puts "\n\nEnter a letter to make a guess, 'save' to save and exit the game, or 'exit' to exit the game: "
   end
-
+=begin
+REWORK HASH TO JUST BE LETTER: "_"
+=
+=
+=
+=end
   def pick_answer
     word = File.readlines("dictionary.txt").sample(1)[0].gsub(/\W/, '').downcase
     count = 0
@@ -79,7 +84,7 @@ class Hangman
   def save_game; end
 
   def bad_guess(choice)
-    puts "There are no #{choice}\'s in the word."
+    puts "There are no #{choice}'s in the word."
     @wrong_guesses += 1
   end
 
