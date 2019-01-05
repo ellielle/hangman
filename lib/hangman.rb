@@ -1,31 +1,37 @@
-class Hangman
-  attr_accessor :game_over
+require "./game_data.rb"
 
-  def initialize
-    @answer = pick_answer
-    @game_over = ""
-    @wrong_guesses = 0
+class Hangman
+  include GameData
+
+  def initialize(pick = pick_answer, wrongs = 0, score = create_score)
+    @answer = pick
+    @wrong_guesses = wrongs
+    set_score(score)
+    @wrong = false
     print_rules
   end
 
   def start_turn
-    return if @game_over == "win" || @game_over == "lose"
-    draw_hangman
-    draw_letters
+    unless @wrong
+      draw_hangman
+      draw_letters
+    end
     print_menu
-    choice = "e"
+    choice = gets.chomp
     exit if choice.downcase == "exit"
-    save_game if choice == "save"
-    if (choice !~ /\W/)
+    save_game if choice.downcase == "save"
+    if choice =~ /[a-zA-Z]/
       check_guess(choice.downcase)
     else
       puts "\nInvalid input. Try again: "
+      @wrong = true
     end
   end
 
-  def load_save_data;  end #TODO
-  
   private
+  def create_score
+    score = {["win"] => 0, ["lose"] => 0}
+  end
 
   def print_rules
     puts "Welcome to Hangman! Each turn you will have the option "\
@@ -33,19 +39,21 @@ class Hangman
         "saving your progress to come back later.\n"
   end
 
-  def check_for_win;  end # TODO
+  def you_win
+    puts "You won! Type 'exit' to quit or 'again' to start again."
+    choice = gets.chomp
+    exit if choice == "exit"
+    start_game if choice == "again"
+    @score["wins"] += 1
+  end
 
   def print_menu
-    puts "\n\nEnter a letter to make a guess, 'save' to save and exit the game, or 'exit' to exit the game: "
+    puts "\nYou have #{6 - @wrong_guesses} guesses left."
+    puts "Enter a letter to make a guess, 'save' to save and exit the game, or 'exit' to exit the game: "
   end
-=begin
-REWORK HASH TO JUST BE LETTER: "_"
-=
-=
-=
-=end
+
   def pick_answer
-    word = File.readlines("dictionary.txt").sample(1)[0].gsub(/\W/, '').downcase
+    word = File.readlines("../dictionary.txt").sample(1)[0].gsub(/\W/, '').downcase
     count = 0
     hash = Hash.new { |h, k| h[k] = [] }
     word.each_char do |c|
@@ -69,34 +77,66 @@ REWORK HASH TO JUST BE LETTER: "_"
   end
 
   def draw_letters
-    @answer.each do |key, value|
-      print "#{value[1]} "
-    end
+    @answer.each { |k, value| print "#{value[1]} " }
   end
 
   def check_guess(choice)
-    return bad_guess(choice) if @answer.value?(choice) == false
-    @answer.each do |k, v|
-      v[1] = choice if v[0] == choice
-    end
+    return bad_guess(choice) unless @answer.values.flatten.include?(choice)
+    @answer.each { |k, v| v[1] = choice if v[0] == choice }
+    @wrong = false
   end
-  
-  def save_game; end
 
   def bad_guess(choice)
     puts "There are no #{choice}'s in the word."
+    @wrong = false
     @wrong_guesses += 1
+    you_lose if @wrong_guesses == 6
   end
 
+  def you_lose
+    display_score
+    puts "You lost. Type 'exit' to quit or 'retry' to start again."
+    @score["loses"] += 1
+    choice = gets.chomp
+    exit if choice == "exit"
+    start_game if choice == "retry"
+    you_lose
+  end
+  
+  def display_score
+    puts "Score: #{@score["wins"]} W/#{@score["loses"]} L"
+  end
 end
 
-def game_loop(game, save = false)
-  game.load_save_data if save
+def game_loop(game)
   loop do
-    break if game.game_over != ""
     game.start_turn
   end
 end
 
-game = Hangman.new
-game_loop(game) # FIX THIS WHEN SAVES IMPLEMENTED
+def start_game
+  include GameData
+  choice = ""
+
+  if File.exist?("../SAVE1")
+    puts "Would you like to load a previous save?(y/n) "
+    loop do
+      choice = gets.chomp
+      break if choice == "y" || choice == "n"
+    end
+    if choice == "y" # TODO split up data
+      begin
+        data = load_save_data
+        data = from_json(data[0])
+        answer = data[0]["answer"]
+        wrongs = data[0]["wrong_guesses"]
+        score = data[0]["score"]
+      rescue
+        puts "Invalid save file."
+      end
+    end
+  end
+  choice == "y" ? game = Hangman.new(answer, wrongs, score) : game = Hangman.new
+  game_loop(game) # TODO FIX THIS WHEN SAVES IMPLEMENTED
+end
+start_game
