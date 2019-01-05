@@ -65,7 +65,6 @@ class Hangman
   end
 
   def draw_hangman
-    # TODO format string to put in middle of screen
     puts "  _______"
     puts "  |      |"
     puts "  |      #{"O" if @wrong_guesses > 0}"
@@ -124,7 +123,7 @@ def start_game
       choice = gets.chomp
       break if choice == "y" || choice == "n"
     end
-    if choice == "y" # TODO split up data
+    if choice == "y"
       begin
         data = load_save_data
         data = from_json(data[0])
@@ -137,6 +136,6 @@ def start_game
     end
   end
   choice == "y" ? game = Hangman.new(answer, wrongs, score) : game = Hangman.new
-  game_loop(game) # TODO FIX THIS WHEN SAVES IMPLEMENTED
+  game_loop(game)
 end
 start_game
